@@ -1,0 +1,50 @@
+name: Check and release extension
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - run: npm run package
+      - name: Verify root metadata is committed and current
+        run: |
+          git ls-files --error-unmatch metadata.msgpack
+          git diff --exit-code -- metadata.msgpack
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run package
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+      - name: Publish installable extension
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release create "$RELEASE_TAG" dist/local.table-split.prg --verify-tag --title "$RELEASE_TAG" --notes-file CHANGELOG.md

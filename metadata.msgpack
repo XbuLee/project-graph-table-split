@@ -1,0 +1,1 @@
+��version�2.0.0�extension��id�local.table-split�name�表格拆分与对齐�description�u将单个文本节点拆分为按行列对齐的节点，支持自定义列分隔符、最大列宽和自动换行。�version�1.1.0�author�XbuLee
